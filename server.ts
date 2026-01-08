@@ -130,14 +130,22 @@ app.post('/api/settings', (req, res) => {
             envLines = fs.readFileSync('.env', 'utf-8').split('\n');
         }
 
-        const updates: Record<string, string> = {
-            'OPENROUTER_API_KEYS': openRouterKeys,
-            'TELEGRAM_BOT_TOKEN': telegramToken,
-            'TELEGRAM_CHAT_ID': telegramChatId,
-            'TELEGRAM_ADMIN_ID': telegramAdminId,
-            'DAILY_QUOTA': dailyQuota,
-            'AI_ENABLED': String(aiEnabled) // Save as string
-        };
+        // Build updates, skipping censored placeholders
+        const updates: Record<string, string> = {};
+
+        // Only update secrets if NOT censored placeholder
+        if (openRouterKeys && openRouterKeys !== '******') {
+            updates['OPENROUTER_API_KEYS'] = openRouterKeys;
+        }
+        if (telegramToken && telegramToken !== '******') {
+            updates['TELEGRAM_BOT_TOKEN'] = telegramToken;
+        }
+
+        // Always update non-secret fields
+        updates['TELEGRAM_CHAT_ID'] = telegramChatId;
+        updates['TELEGRAM_ADMIN_ID'] = telegramAdminId;
+        updates['DAILY_QUOTA'] = dailyQuota;
+        updates['AI_ENABLED'] = String(aiEnabled);
 
         const newLines: string[] = [];
         const processedKeys = new Set<string>();
