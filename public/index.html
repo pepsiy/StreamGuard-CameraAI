@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StreamGuard Smart Dashboard</title>
+
+    <!-- Alpine.js (Core) -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- App Logic -->
+    <script>
+        document.addEventListener('alpine:init', () => {
+            Alpine.data('dashboard', () => ({
+                activeTab: 'logs',
+                logs: [],
+                keyUsage: [], // New stats
+                filter: {
+                    enabled: true,
+                    securityRules: '',
+                    minConfidence: 60
+                },
+                settings: {
+                    openRouterKeys: '',
+                    telegramToken: '',
+                    telegramChatId: '',
+                    telegramAdminId: '',
+                    dailyQuota: 50,
+                    aiEnabled: true // New toggle
+                },
+                pollInterval: null,
+
+                init() {
+                    console.log('StreamGuard Dashboard Initialized');
+
+                    // Start log polling
+                    this.fetchLogs();
+                    this.pollInterval = setInterval(() => {
+                        if (this.activeTab === 'logs') this.fetchLogs();
+                        if (this.activeTab === 'filter') this.loadKeyUsage();
+                    }, 3000);
+
+                    // Load config
+                    this.loadFilter();
+                    this.loadSettings();
+                    this.loadKeyUsage();
+                },
+
+                async fetchLogs() {
+                    try {
+                        const res = await fetch('/api/logs');
+                        if (res.ok) this.logs = await res.json();
+                    } catch (e) { console.error('Log fetch error:', e); }
+                },
+
+                async clearLogs() {
+                    try {
+                        await fetch('/api/logs/clear', { method: 'POST' });
+                        this.logs = [];
+                    } catch (e) { console.error('Clear log error:', e); }
+                },
+
+                async loadFilter() {
+                    try {
+                        const res = await fetch('/api/filter');
+                        if (res.ok) this.filter = await res.json();
+                    } catch (e) { console.error('Load filter error:', e); }
+                },
+
+                async loadKeyUsage() {
+                    try {
+                        const res = await fetch('/api/key-usage');
+                        if (res.ok) this.keyUsage = await res.json();
+                    } catch (e) { console.error('Load key usage error:', e); }
+                },
+
+                async resetUsage() {
+                    if (!confirm('Reset all key usage quotas to 0?')) return;
+                    try {
+                        await fetch('/api/key-usage/reset', { method: 'POST' });
+                        this.loadKeyUsage();
+                        alert('Quotas reset!');
+                    } catch (e) { alert('Error: ' + e); }
+                },
+
+                async saveFilter() {
+                    try {
+                        await fetch('/api/filter', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(this.filter)
+                        });
+                        console.log('Filter saved');
+                    } catch (e) { console.error('Save filter error:', e); }
+                },
+
+                async loadSettings() {
+                    try {
+                        const res = await fetch('/api/settings');
+                        if (res.ok) this.settings = await res.json();
+                    } catch (e) { console.error('Load settings error:', e); }
+                },
+
+                async saveSettings() {
+                    if (!confirm('Save settings to .env file? Server will restart.')) return;
+                    try {
+                        await fetch('/api/settings', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(this.settings)
+                        });
+                        alert('Settings saved! Server restarting...');
+                    } catch (e) {
+                        alert('Error saving settings: ' + e.message);
+                    }
+                },
+
+                async testTelegram() {
+                    try {
+                        const res = await fetch('/api/test-telegram', { method: 'POST' });
+                        const data = await res.json();
+                        if (data.success) alert('Test message sent!');
+                        else alert('Failed: ' + data.error);
+                    } catch (e) {
+                        alert('Error: ' + e.message);
+                    }
+                },
+
+                async testAdmin() {
+                    try {
+                        const res = await fetch('/api/test-admin', { method: 'POST' });
+                        const data = await res.json();
+                        if (data.success) alert('Admin Alert sent!');
+                        else alert('Failed: ' + data.error);
+                    } catch (e) {
+                        alert('Error: ' + e.message);
+                    }
+                }
+            }));
+        });
+    </script>
+
+    <style>
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+
+        .scrollbar-hide {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        [x-cloak] {
+            display: none !important;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-900 text-gray-100 min-h-screen font-sans antialiased" x-data="dashboard" x-cloak>
+
+    <!-- Navbar -->
+    <nav class="bg-gray-800 border-b border-gray-700 fixed w-full top-0 z-50 shadow-md">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center gap-2">
+                    <span class="text-2xl">🛡️</span>
+                    <span class="font-bold text-xl tracking-tight text-blue-400">StreamGuard AI</span>
+                </div>
+                <div class="flex space-x-2 md:space-x-4">
+                    <button @click="activeTab = 'logs'"
+                        :class="activeTab === 'logs' ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-300 hover:bg-gray-700 hover:text-white'"
+                        class="px-3 py-2 rounded-md text-sm font-bold transition-all duration-200">
+                        Activity Logs
+                    </button>
+                    <button @click="activeTab = 'filter'"
+                        :class="activeTab === 'filter' ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-300 hover:bg-gray-700 hover:text-white'"
+                        class="px-3 py-2 rounded-md text-sm font-bold transition-all duration-200">
+                        Smart Agent
+                    </button>
+                    <button @click="activeTab = 'settings'"
+                        :class="activeTab === 'settings' ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-300 hover:bg-gray-700 hover:text-white'"
+                        class="px-3 py-2 rounded-md text-sm font-bold transition-all duration-200">
+                        Settings
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="pt-24 pb-10 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+
+        <!-- Logs Tab -->
+        <div x-show="activeTab === 'logs'" x-transition:enter="transition ease-out duration-300"
+            x-transition:enter-start="opacity-0 translate-y-4" x-transition:enter-end="opacity-100 translate-y-0"
+            class="space-y-4">
+
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold flex items-center gap-2 text-green-400">
+                    <span class="relative flex h-3 w-3">
+                        <span
+                            class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                        <span class="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+                    </span>
+                    Live Activity
+                </h2>
+                <button @click="clearLogs"
+                    class="text-xs bg-gray-800 hover:bg-red-900 border border-gray-600 hover:border-red-500 px-3 py-1 rounded text-gray-300 transition-colors">
+                    Clear Logs
+                </button>
+            </div>
+
+            <div class="bg-gray-950 rounded-xl shadow-2xl border border-gray-800 h-[600px] flex flex-col relative">
+                <!-- Log Container -->
+                <div class="flex-1 overflow-y-auto p-4 space-y-2 font-mono text-sm" id="logs-container">
+                    <template x-for="(log, index) in logs" :key="index">
+                        <div class="border-l-2 pl-3 py-1 animate-fadeIn"
+                            :class="log.includes('ALERT') ? 'border-red-500 bg-red-900/10' : (log.includes('Normal') ? 'border-green-500' : 'border-blue-500')">
+                            <span x-text="log" class="text-gray-300 break-words"></span>
+                        </div>
+                    </template>
+                    <div x-show="logs.length === 0"
+                        class="absolute inset-0 flex items-center justify-center text-gray-600 italic">
+                        No activity yet. Monitoring...
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Smart Agent Tab -->
+        <div x-show="activeTab === 'filter'" x-transition:enter="transition ease-out duration-300"
+            x-transition:enter-start="opacity-0 translate-y-4" x-transition:enter-end="opacity-100 translate-y-0"
+            class="space-y-6">
+
+            <div class="bg-gray-800 p-6 md:p-8 rounded-xl shadow-2xl border border-gray-700">
+                <h2 class="text-2xl font-bold mb-6 flex items-center gap-3 text-blue-400 border-b border-gray-700 pb-4">
+                    <span>🤖</span> Smart Security Agent
+                </h2>
+
+                <!-- API Usage Stats (New) -->
+                <div class="mb-8 bg-gray-900/50 p-4 rounded-lg border border-gray-700/50">
+                    <h3 class="text-lg font-bold text-gray-300 mb-3 flex justify-between">
+                        <span>API Key Usage (Today)</span>
+                        <div class="flex gap-2">
+                            <button @click="resetUsage"
+                                class="text-xs bg-red-900/50 hover:bg-red-800 text-red-300 px-2 py-1 rounded transition-colors">🗑️
+                                Reset Quota</button>
+                            <button @click="loadKeyUsage" class="text-xs text-blue-400 hover:text-blue-300">↻
+                                Refresh</button>
+                        </div>
+                    </h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm text-gray-400">
+                            <thead class="bg-gray-700/50 text-gray-200 uppercase text-xs">
+                                <tr>
+                                    <th class="px-3 py-2">Key (End)</th>
+                                    <th class="px-3 py-2">Usage</th>
+                                    <th class="px-3 py-2">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-700/50">
+                                <template x-for="stat in keyUsage" :key="stat.key">
+                                    <tr class="hover:bg-gray-700/30 transition">
+                                        <td class="px-3 py-2 font-mono text-blue-300" x-text="stat.key"></td>
+                                        <td class="px-3 py-2">
+                                            <div class="flex items-center gap-2">
+                                                <div class="w-24 bg-gray-700 rounded-full h-1.5 dark:bg-gray-700">
+                                                    <div class="bg-blue-600 h-1.5 rounded-full"
+                                                        :style="'width: ' + Math.min((stat.usage/stat.quota)*100, 100) + '%'">
+                                                    </div>
+                                                </div>
+                                                <span x-text="stat.usage + '/' + stat.quota"></span>
+                                            </div>
+                                        </td>
+                                        <td class="px-3 py-2">
+                                            <span class="px-2 py-0.5 rounded text-xs font-bold"
+                                                :class="stat.status === 'Active' ? 'bg-green-900 text-green-300' : 'bg-red-900 text-red-300'"
+                                                x-text="stat.status"></span>
+                                        </td>
+                                    </tr>
+                                </template>
+                                <tr x-show="keyUsage.length === 0">
+                                    <td colspan="3" class="px-3 py-4 text-center italic">No keys stats available yet.
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="mb-8 flex items-center bg-gray-900/50 p-4 rounded-lg border border-gray-700/50">
+                    <label class="flex items-center cursor-pointer">
+                        <div class="relative">
+                            <input type="checkbox" x-model="filter.enabled" class="sr-only" @change="saveFilter">
+                            <div class="block bg-gray-600 w-14 h-8 rounded-full transition-colors"
+                                :class="filter.enabled ? 'bg-green-600' : 'bg-gray-600'"></div>
+                            <div class="dot absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition-transform duration-200"
+                                :class="filter.enabled ? 'transform translate-x-6' : ''"></div>
+                        </div>
+                        <div class="ml-4">
+                            <div class="text-gray-200 font-bold text-lg">Enable AI Agent</div>
+                            <div class="text-gray-500 text-sm">Turn AI monitoring on/off</div>
+                        </div>
+                    </label>
+                </div>
+
+                <!-- Rule Context -->
+                <div class="mb-8">
+                    <label class="block text-base font-bold text-blue-300 mb-2">
+                        Security Context & Rules (Ngữ cảnh giám sát)
+                    </label>
+                    <p class="text-sm text-gray-400 mb-3">
+                        Mô tả cho AI biết bạn muốn cảnh báo điều gì.
+                    </p>
+                    <textarea x-model="filter.securityRules" rows="6"
+                        class="w-full bg-gray-900 border border-gray-600 rounded-lg py-3 px-4 text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all placeholder-gray-600"
+                        placeholder="Ví dụ: Cảnh báo khi có người lạ trước cổng. Bỏ qua xe chạy ngang qua đường."
+                        @change="saveFilter"></textarea>
+                </div>
+
+                <!-- Confidence Slider -->
+                <div class="mb-4 bg-gray-900/50 p-6 rounded-xl border border-gray-700/50">
+                    <div class="flex justify-between mb-4">
+                        <label class="block text-base font-medium text-gray-300">
+                            Minimum Confidence (Độ tin cậy)
+                        </label>
+                        <span class="text-blue-400 font-bold text-lg" x-text="filter.minConfidence + '%'"></span>
+                    </div>
+
+                    <input type="range" min="0" max="100" x-model="filter.minConfidence"
+                        class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500 hover:accent-blue-400 transition-all"
+                        @change="saveFilter">
+                    <div class="flex justify-between mt-2 text-xs text-gray-500">
+                        <span>Sensitive (0%)</span>
+                        <span>Balanced (50%)</span>
+                        <span>Strict (100%)</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Settings Tab -->
+        <div x-show="activeTab === 'settings'" x-transition:enter="transition ease-out duration-300"
+            x-transition:enter-start="opacity-0 translate-y-4" x-transition:enter-end="opacity-100 translate-y-0"
+            class="space-y-6">
+
+            <div class="bg-gray-800 p-6 md:p-8 rounded-xl shadow-2xl border border-gray-700">
+                <h2 class="text-2xl font-bold mb-6 text-gray-200 border-b border-gray-700 pb-4">
+                    ⚙️ System Settings
+                </h2>
+
+                <div class="space-y-6">
+                    <div>
+                        <label class="block text-sm font-bold text-gray-300 mb-2">OpenRouter API Keys</label>
+                        <textarea x-model="settings.openRouterKeys"
+                            class="w-full bg-gray-900 border border-gray-600 rounded-lg py-3 px-4 text-gray-200 font-mono text-sm focus:ring-2 focus:ring-green-500 focus:outline-none"
+                            rows="3" placeholder="sk-or-v1-key1, sk-or-v1-key2..."></textarea>
+                        <p class="text-xs text-gray-500 mt-2">
+                            Nhập nhiều key ngăn cách bởi dấu phẩy (,). Tự động xoay vòng.
+                        </p>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-bold text-gray-300 mb-2">Daily Quota (per Key)</label>
+                            <input type="number" x-model="settings.dailyQuota"
+                                class="w-full bg-gray-900 border border-gray-600 rounded-lg py-3 px-4 text-gray-200 font-mono text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                placeholder="50">
+                            <p class="text-xs text-gray-500 mt-2">
+                                Giới hạn số request mỗi ngày cho mỗi key.
+                            </p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-300 mb-2">Enable AI Analysis</label>
+                            <label class="flex items-center cursor-pointer mt-3">
+                                <div class="relative">
+                                    <input type="checkbox" x-model="settings.aiEnabled" class="sr-only">
+                                    <div class="block bg-gray-600 w-14 h-8 rounded-full transition-colors"
+                                        :class="settings.aiEnabled ? 'bg-blue-600' : 'bg-gray-600'"></div>
+                                    <div class="dot absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition-transform duration-200"
+                                        :class="settings.aiEnabled ? 'transform translate-x-6' : ''"></div>
+                                </div>
+                                <div class="ml-3 text-sm text-gray-400">
+                                    <span x-show="settings.aiEnabled">AI Active (Filter Alerts)</span>
+                                    <span x-show="!settings.aiEnabled">Direct Forward (All Emails)</span>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="border-t border-gray-700 pt-6"></div>
+
+                    <div>
+                        <label class="block text-sm font-bold text-gray-300 mb-2">Telegram Bot Token</label>
+                        <input type="password" x-model="settings.telegramToken"
+                            class="w-full bg-gray-900 border border-gray-600 rounded-lg py-3 px-4 text-gray-200 font-mono text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                            placeholder="123456:ABC-DEF...">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-bold text-gray-300 mb-2">Recipient Chat IDs (Users)</label>
+                        <input type="text" x-model="settings.telegramChatId"
+                            class="w-full bg-gray-900 border border-gray-600 rounded-lg py-3 px-4 text-gray-200 font-mono text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                            placeholder="12345678, 87654321">
+                        <p class="text-xs text-gray-500 mt-2">
+                            Người dùng nhận cảnh báo. Ngăn cách bởi dấu phẩy (,).
+                        </p>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-bold text-yellow-500 mb-2">Admin Chat ID (Technical
+                            Alerts)</label>
+                        <div class="flex gap-2">
+                            <input type="text" x-model="settings.telegramAdminId"
+                                class="w-full bg-gray-900 border border-gray-600 rounded-lg py-3 px-4 text-gray-200 font-mono text-sm focus:ring-2 focus:ring-yellow-500 focus:outline-none"
+                                placeholder="99999999">
+                            <button @click="testAdmin"
+                                class="bg-gray-700 hover:bg-gray-600 px-4 rounded text-sm font-bold">Test</button>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-2">
+                            Admin nhận thông báo lỗi kỹ thuật và cảnh báo hết quota.
+                        </p>
+                    </div>
+
+                    <div class="pt-8 flex flex-wrap gap-4 border-t border-gray-700 mt-8">
+                        <button @click="saveSettings"
+                            class="flex-1 bg-green-600 hover:bg-green-700 active:bg-green-800 text-white font-bold py-3 px-6 rounded-lg transition-all shadow-lg flex justify-center items-center gap-2">
+                            <span>💾</span> Save to .env
+                        </button>
+                        <button @click="testTelegram"
+                            class="flex-1 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold py-3 px-6 rounded-lg transition-all shadow-lg flex justify-center items-center gap-2">
+                            <span>📨</span> Test User Alert
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+</body>
+
+</html>

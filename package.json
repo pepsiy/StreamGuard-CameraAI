@@ -2,10 +2,7 @@
     "name": "streamguard-netlify",
     "version": "1.0.0",
     "scripts": {
-        "start": "npx tsx server.ts",
-        "dev": "netlify dev",
-        "build": "netlify build",
-        "deploy": "netlify deploy --prod"
+        "start": "npx tsx server.ts"
     },
     "dependencies": {
         "@netlify/functions": "^2.4.0",
@@ -26,7 +23,5 @@
         "@types/mailparser": "^3.4.6",
         "@types/node": "^20.19.27"
     },
-    "devDependencies": {
-        "netlify-cli": "^17.0.0"
-    }
+    "devDependencies": {}
 }
