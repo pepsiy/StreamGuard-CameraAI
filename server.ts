@@ -94,6 +94,20 @@ app.post('/api/test-admin', async (req, res) => {
     }
 });
 
+// API: Debug Token (Temporary)
+app.get('/api/debug-token', (req, res) => {
+    const token = process.env.TELEGRAM_BOT_TOKEN || '';
+    res.json({
+        status: 'Debug Info',
+        length: token.length,
+        first4: token.substring(0, 4),
+        last4: token.substring(token.length - 4),
+        lastCharCode: token.length > 0 ? token.charCodeAt(token.length - 1) : null,
+        hasWhitespace: /\s/.test(token),
+        raw_last: token.length > 0 ? `[${token.charAt(token.length - 1)}]` : '[]'
+    });
+});
+
 // API: Get Settings (Censored)
 app.get('/api/settings', (req, res) => {
     res.json({
