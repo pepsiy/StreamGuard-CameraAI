@@ -2,7 +2,8 @@
     "name": "streamguard-netlify",
     "version": "1.0.0",
     "scripts": {
-        "start": "npx tsx server.ts"
+        "start": "npx tsx server.ts",
+        "build": "echo 'No build needed'"
     },
     "dependencies": {
         "@netlify/functions": "^2.4.0",
