@@ -26,6 +26,8 @@
                 },
                 settings: {
                     openRouterKeys: '',
+                    huggingfaceToken: '',
+                    aiProvider: 'huggingface',
                     telegramToken: '',
                     telegramChatId: '',
                     telegramAdminId: '',
@@ -355,16 +357,39 @@
 
                 <div class="space-y-6">
                     <div>
-                        <label class="block text-sm font-bold text-gray-300 mb-2">OpenRouter API Keys</label>
+                        <label class="block text-sm font-bold text-gray-300 mb-2">OpenRouter API Keys (Legacy)</label>
                         <textarea x-model="settings.openRouterKeys"
                             class="w-full bg-gray-900 border border-gray-600 rounded-lg py-3 px-4 text-gray-200 font-mono text-sm focus:ring-2 focus:ring-green-500 focus:outline-none"
-                            rows="3" placeholder="sk-or-v1-key1, sk-or-v1-key2..."></textarea>
+                            rows="2" placeholder="sk-or-v1-key1, sk-or-v1-key2..."></textarea>
                         <p class="text-xs text-gray-500 mt-2">
-                            Nhập nhiều key ngăn cách bởi dấu phẩy (,). Tự động xoay vòng.
+                            Optional: Multiple keys separated by comma.
+                        </p>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-bold text-blue-300 mb-2">🤗 HuggingFace Token
+                            (Recommended)</label>
+                        <input type="password" x-model="settings.huggingfaceToken"
+                            class="w-full bg-gray-900 border border-blue-600 rounded-lg py-3 px-4 text-gray-200 font-mono text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                            placeholder="hf_xxxxxxxxxxxxxxxxxxxxxxxxxxxxx">
+                        <p class="text-xs text-blue-400 mt-2">
+                            ✅ Free forever • Get token: <a href="https://huggingface.co/settings/tokens" target="_blank"
+                                class="underline">huggingface.co/settings/tokens</a>
                         </p>
                     </div>
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-bold text-gray-300 mb-2">AI Provider</label>
+                            <select x-model="settings.aiProvider"
+                                class="w-full bg-gray-900 border border-gray-600 rounded-lg py-3 px-4 text-gray-200 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                                <option value="huggingface">🤗 HuggingFace (Free, Recommended)</option>
+                                <option value="openrouter">OpenRouter (Legacy)</option>
+                            </select>
+                            <p class="text-xs text-gray-500 mt-2">
+                                HuggingFace is more reliable for free tier.
+                            </p>
+                        </div>
                         <div>
                             <label class="block text-sm font-bold text-gray-300 mb-2">Daily Quota (per Key)</label>
                             <input type="number" x-model="settings.dailyQuota"

@@ -4,7 +4,7 @@ System to monitor XVR Email Alerts, detect people/objects using AI, and send Tel
 
 ## 🚀 Features
 - **Real-time Monitoring:** IMAP IDLE (Push Notification) - 0s delay.
-- **AI Analysis:** Analyzes images using OpenRouter (Qwen/Llama vision).
+- **AI Analysis:** 🤗 HuggingFace Moondream2 (Free, Recommended) or OpenRouter (Legacy).
 - **Smart Filter:** Ignores "Alarm Cleared" emails & filters unwanted objects.
 - **Telegram Alerts:** Sends 16:9 resized snapshots with descriptions.
 - **Web Dashboard:** View logs & configure filters at `http://localhost:3000`.
@@ -14,7 +14,9 @@ System to monitor XVR Email Alerts, detect people/objects using AI, and send Tel
 ### 1. Prerequisites
 - Node.js 18+
 - Gmail Account (with App Password)
-- OpenRouter API Key
+- **🤗 HuggingFace Token** (Free) - **Recommended**
+  - Get yours at: https://huggingface.co/settings/tokens
+  - OR OpenRouter API Key (Legacy)
 - Telegram Bot Token
 
 ### 2. Install
@@ -27,9 +29,20 @@ Create `.env` file with:
 ```env
 PORT=3000
 HOSTNAME=0.0.0.0
+
+# AI Provider (Recommended: HuggingFace)
+AI_PROVIDER=huggingface
+HUGGINGFACE_TOKEN=hf_xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+AI_ENABLED=true
+
+# Legacy: OpenRouter (Optional)
+OPENROUTER_API_KEYS=sk-or-v1-key1,sk-or-v1-key2
+DAILY_QUOTA=50
+
+# Telegram
 TELEGRAM_BOT_TOKEN=your_token
 TELEGRAM_CHAT_ID=your_chat_id
-OPENROUTER_API_KEY=your_key
+TELEGRAM_ADMIN_ID=your_admin_id
 
 # Gmail
 GMAIL_USER=your_email@gmail.com

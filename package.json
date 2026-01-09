@@ -6,9 +6,14 @@
         "build": "echo 'No build needed'"
     },
     "dependencies": {
+        "@huggingface/inference": "^4.13.5",
         "@netlify/functions": "^2.4.0",
+        "@types/busboy": "^1.5.4",
         "@types/cors": "^2.8.19",
         "@types/express": "^5.0.6",
+        "@types/imap": "^0.8.43",
+        "@types/mailparser": "^3.4.6",
+        "@types/node": "^20.19.27",
         "busboy": "^1.6.0",
         "cors": "^2.8.5",
         "dotenv": "^17.2.3",
@@ -18,11 +23,6 @@
         "sharp": "^0.34.5",
         "ts-node": "^10.9.2",
         "tsx": "^4.21.0",
-        "typescript": "^5.9.3",
-        "@types/busboy": "^1.5.4",
-        "@types/imap": "^0.8.43",
-        "@types/mailparser": "^3.4.6",
-        "@types/node": "^20.19.27"
-    },
-    "devDependencies": {}
+        "typescript": "^5.9.3"
+    }
 }

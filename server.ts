@@ -10,9 +10,11 @@ import path from 'path';
 import fs from 'fs';
 import { GmailIdleService, EmailData } from './src/gmail_polling';
 import { openRouterService } from './src/ai/openrouter';
+import { huggingfaceService } from './src/ai/huggingface';
 import { getFilterConfig, updateFilterConfig, isLowConfidence } from './src/filter';
 import { telegramService } from './src/telegram_service'; // New Service
 import { keyManager } from './src/ai/key_manager'; // New Manager
+
 
 /**
  * Snapshot Server (Node.js + Express)
@@ -112,6 +114,8 @@ app.get('/api/debug-token', (req, res) => {
 app.get('/api/settings', (req, res) => {
     res.json({
         openRouterKeys: process.env.OPENROUTER_API_KEYS ? '******' : '',
+        huggingfaceToken: process.env.HUGGINGFACE_TOKEN ? '******' : '',
+        aiProvider: process.env.AI_PROVIDER || 'huggingface',
         telegramToken: process.env.TELEGRAM_BOT_TOKEN ? '******' : '',
         telegramChatId: process.env.TELEGRAM_CHAT_ID,
         telegramAdminId: process.env.TELEGRAM_ADMIN_ID,
@@ -122,7 +126,7 @@ app.get('/api/settings', (req, res) => {
 
 // API: Save Settings
 app.post('/api/settings', (req, res) => {
-    const { openRouterKeys, telegramToken, telegramChatId, telegramAdminId, dailyQuota, aiEnabled } = req.body;
+    const { openRouterKeys, huggingfaceToken, aiProvider, telegramToken, telegramChatId, telegramAdminId, dailyQuota, aiEnabled } = req.body;
 
     try {
         let envLines: string[] = [];
@@ -137,11 +141,15 @@ app.post('/api/settings', (req, res) => {
         if (openRouterKeys && openRouterKeys !== '******') {
             updates['OPENROUTER_API_KEYS'] = openRouterKeys;
         }
+        if (huggingfaceToken && huggingfaceToken !== '******') {
+            updates['HUGGINGFACE_TOKEN'] = huggingfaceToken;
+        }
         if (telegramToken && telegramToken !== '******') {
             updates['TELEGRAM_BOT_TOKEN'] = telegramToken;
         }
 
         // Always update non-secret fields
+        updates['AI_PROVIDER'] = aiProvider || 'huggingface';
         updates['TELEGRAM_CHAT_ID'] = telegramChatId;
         updates['TELEGRAM_ADMIN_ID'] = telegramAdminId;
         updates['DAILY_QUOTA'] = dailyQuota;
@@ -191,6 +199,7 @@ app.post('/api/settings', (req, res) => {
 
         telegramService.reloadConfig();
         keyManager.reload();
+        huggingfaceService.reload();
 
         res.json({ success: true });
     } catch (e: any) {
@@ -268,12 +277,25 @@ if (gmailUser && gmailPassword) {
                     return;
                 }
 
-                // Analyze with OpenRouter + Smart Security Rules
-                const result = await openRouterService.analyzeSnapshot(
-                    emailData.imageBuffer,
-                    cameraName,
-                    filter.securityRules
-                );
+                // Analyze with AI (HuggingFace or OpenRouter) + Smart Security Rules
+                const aiProvider = process.env.AI_PROVIDER || 'huggingface'; // Default to HuggingFace
+                console.log(`[AI] Using provider: ${aiProvider}`);
+
+                let result;
+                if (aiProvider === 'openrouter') {
+                    result = await openRouterService.analyzeSnapshot(
+                        emailData.imageBuffer,
+                        cameraName,
+                        filter.securityRules
+                    );
+                } else {
+                    // Use HuggingFace (default)
+                    result = await huggingfaceService.analyzeSnapshot(
+                        emailData.imageBuffer,
+                        cameraName,
+                        filter.securityRules
+                    );
+                }
 
                 if (!result) {
                     addLog(`⚠️ AI analysis failed`);
