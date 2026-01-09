@@ -1,10 +1,12 @@
-# 📸 StreamGuard - AI Camera Monitor
+# 🛡️ StreamGuard AI
 
-System to monitor XVR Email Alerts, detect people/objects using AI, and send Telegram notifications.
+**Cost-Effective AI Security with Gmail & Telegram Integration.**
+
+StreamGuard turns your cheap specific cameras (XVR/NVR) into smart AI-powered security systems. It listens to email alerts, analyzes images with **Qwen 2.5 VL (via OpenRouter)**, and sends intelligent alerts to Telegram.
 
 ## 🚀 Features
 - **Real-time Monitoring:** IMAP IDLE (Push Notification) - 0s delay.
-- **AI Analysis:** 🤗 HuggingFace Moondream2 (Free, Recommended) or OpenRouter (Legacy).
+- **AI Analysis:** OpenRouter with Qwen 2.5 VL 7B (~$0.2/1M tokens).
 - **Smart Filter:** Ignores "Alarm Cleared" emails & filters unwanted objects.
 - **Telegram Alerts:** Sends 16:9 resized snapshots with descriptions.
 - **Web Dashboard:** View logs & configure filters at `http://localhost:3000`.
@@ -14,9 +16,8 @@ System to monitor XVR Email Alerts, detect people/objects using AI, and send Tel
 ### 1. Prerequisites
 - Node.js 18+
 - Gmail Account (with App Password)
-- **🤗 HuggingFace Token** (Free) - **Recommended**
-  - Get yours at: https://huggingface.co/settings/tokens
-  - OR OpenRouter API Key (Legacy)
+- **OpenRouter API Key** - Get at: https://openrouter.ai/keys
+  - Recommended model: `qwen/qwen-2.5-vl-7b-instruct`
 - Telegram Bot Token
 
 ### 2. Install
@@ -30,14 +31,11 @@ Create `.env` file with:
 PORT=3000
 HOSTNAME=0.0.0.0
 
-# AI Provider (Recommended: HuggingFace)
-AI_PROVIDER=huggingface
-HUGGINGFACE_TOKEN=hf_xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# AI Provider (OpenRouter Only)
+AI_PROVIDER=openrouter
+OPENROUTER_API_KEYS=sk-or-v1-xxxxxxxxxxxxx
+DAILY_QUOTA=200
 AI_ENABLED=true
-
-# Legacy: OpenRouter (Optional)
-OPENROUTER_API_KEYS=sk-or-v1-key1,sk-or-v1-key2
-DAILY_QUOTA=50
 
 # Telegram
 TELEGRAM_BOT_TOKEN=your_token

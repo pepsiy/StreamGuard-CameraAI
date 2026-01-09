@@ -10,7 +10,6 @@ import path from 'path';
 import fs from 'fs';
 import { GmailIdleService, EmailData } from './src/gmail_polling';
 import { openRouterService } from './src/ai/openrouter';
-import { huggingfaceService } from './src/ai/huggingface';
 import { getFilterConfig, updateFilterConfig, isLowConfidence } from './src/filter';
 import { telegramService } from './src/telegram_service'; // New Service
 import { keyManager } from './src/ai/key_manager'; // New Manager
@@ -203,9 +202,10 @@ app.post('/api/settings', (req, res) => {
 
         telegramService.reloadConfig();
         keyManager.reload();
-        huggingfaceService.reload();
+        // OpenRouterService uses KeyManager which is already reloaded
+        console.log('[Settings] Configurations reloaded');
 
-        res.json({ success: true });
+        res.json({ success: true, message: 'Settings saved and services reloaded' });
     } catch (e: any) {
         console.error('Save error:', e);
         res.status(500).json({ error: e.message });
@@ -281,25 +281,14 @@ if (gmailUser && gmailPassword) {
                     return;
                 }
 
-                // Analyze with AI (HuggingFace or OpenRouter) + Smart Security Rules
-                const aiProvider = process.env.AI_PROVIDER || 'huggingface'; // Default to HuggingFace
-                console.log(`[AI] Using provider: ${aiProvider}`);
+                // AI Analysis (OpenRouter Only)
+                console.log(`[AI] Using provider: openrouter (Qwen 2.5 CL)`);
 
-                let result;
-                if (aiProvider === 'openrouter') {
-                    result = await openRouterService.analyzeSnapshot(
-                        emailData.imageBuffer,
-                        cameraName,
-                        filter.securityRules
-                    );
-                } else {
-                    // Use HuggingFace (default)
-                    result = await huggingfaceService.analyzeSnapshot(
-                        emailData.imageBuffer,
-                        cameraName,
-                        filter.securityRules
-                    );
-                }
+                const result = await openRouterService.analyzeSnapshot(
+                    emailData.imageBuffer,
+                    cameraName,
+                    filter.securityRules
+                );
 
                 if (!result) {
                     addLog(`⚠️ AI analysis failed`);

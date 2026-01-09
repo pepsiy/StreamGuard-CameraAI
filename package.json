@@ -6,7 +6,6 @@
         "build": "echo 'No build needed'"
     },
     "dependencies": {
-        "@huggingface/inference": "^4.13.5",
         "@netlify/functions": "^2.4.0",
         "@types/busboy": "^1.5.4",
         "@types/cors": "^2.8.19",

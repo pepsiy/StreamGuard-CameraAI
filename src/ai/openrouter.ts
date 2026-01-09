@@ -5,13 +5,11 @@ import { keyManager } from './key_manager';
 
 export class OpenRouterService {
     private models = [
-        "google/gemma-3-27b-it:free",
-        "google/gemma-3-4b-it:free",
-        "mistralai/mistral-small-3.1-24b-instruct:free", // #3 Exact ID matches URL
+        "qwen/qwen-2.5-vl-7b-instruct", // $0.2/1M tokens - cost effective vision model
     ];
 
     constructor() {
-        console.log('[OpenRouter] Initialized with models:', this.models);
+        console.log('[OpenRouter] Initialized with Qwen 2.5 VL 7B model');
     }
 
     public async analyzeFrame(
