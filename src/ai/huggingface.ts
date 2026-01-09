@@ -7,13 +7,13 @@ import { HfInference } from '@huggingface/inference';
  */
 export class HuggingFaceService {
     private hf: HfInference | null = null;
-    private model = 'vikhyatk/moondream2';
+    private model = 'Salesforce/blip-vqa-base'; // VQA model with Inference API support
 
     constructor() {
         const token = process.env.HUGGINGFACE_TOKEN;
         if (token && token !== 'your_huggingface_token_here') {
             this.hf = new HfInference(token);
-            console.log('[HuggingFace] Initialized with Moondream2 model');
+            console.log('[HuggingFace] Initialized with BLIP-VQA model');
         } else {
             console.warn('[HuggingFace] ⚠️ HUGGINGFACE_TOKEN not configured');
         }
@@ -44,28 +44,10 @@ export class HuggingFaceService {
             // Convert buffer to blob (fix type compatibility)
             const blob = new Blob([new Uint8Array(imageBuffer)], { type: 'image/jpeg' });
 
-            // Structured prompt for security analysis
-            const question = `You are a security AI analyzing a camera image from "${cameraName}".
+            // Simplified question for BLIP-VQA (works better with short questions)
+            const question = `Is there a person or vehicle in this security camera image? Answer yes or no and briefly describe what you see.`;
 
-Security Rules: "${rules || "Detect any unusual activity"}"
-
-Analyze this image and respond ONLY with valid JSON in this exact format:
-{
-  "shouldAlert": true or false,
-  "description": "brief description in Vietnamese explaining what you see and why alert/no alert",
-  "confidence": number between 0-100,
-  "detectedObjects": ["person", "vehicle", "animal", etc.]
-}
-
-IMPORTANT:
-- shouldAlert: true if you see people, vehicles, or suspicious activity matching the security rules
-- shouldAlert: false for normal scenes, trees, shadows, rain, or familiar settings
-- confidence: 70-100 if certain, 40-69 if uncertain, 0-39 if very uncertain
-- Be specific about WHY you're alerting or not
-
-Respond with ONLY the JSON object, no other text.`;
-
-            console.log('[HuggingFace] Sending request to Moondream2...');
+            console.log('[HuggingFace] Sending request to BLIP-VQA...');
 
             // Use Visual Question Answering
             const response = await this.hf.visualQuestionAnswering({
