@@ -282,7 +282,7 @@ if (gmailUser && gmailPassword) {
 
             console.log(`\n[Gmail] 📸 Processing snapshot from email`);
             addLog(`📧 Email from ${emailData.from}`, 'info');
-            addLog(`📸 Processing: ${cameraName}`, 'processing', emailData.imageBuffer);
+            addLog(`📸 Processing: ${cameraName}`, 'processing');
 
             try {
                 // Get Smart Rules
