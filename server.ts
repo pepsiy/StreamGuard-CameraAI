@@ -28,21 +28,47 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static('public')); // Serve static files from /public
 
-// Activity Log Storage
-const activityLogs: string[] = [];
-const MAX_LOGS = 100;
+import sharp from 'sharp'; // For resizing log images
 
-function addLog(message: string) {
+// Activity Log Storage
+interface LogItem {
+    timestamp: string;
+    message: string;
+    type: 'info' | 'alert' | 'success' | 'error' | 'processing';
+    image?: string; // base64 data URI
+}
+
+const activityLogs: LogItem[] = [];
+const MAX_LOGS = 50; // Reduce count to save memory with images
+
+async function addLog(message: string, type: LogItem['type'] = 'info', imageBuffer?: Buffer) {
     // Check timezone for Vietnam (UTC+7)
     const timestamp = new Date().toLocaleTimeString('vi-VN', {
         timeZone: 'Asia/Ho_Chi_Minh'
     });
-    const log = `[${timestamp}] ${message}`;
+
+    let image: string | undefined;
+
+    if (imageBuffer) {
+        try {
+            // Create a small thumbnail for logs
+            const resized = await sharp(imageBuffer)
+                .resize(320) // Width 300px
+                .jpeg({ quality: 70 })
+                .toBuffer();
+            image = `data:image/jpeg;base64,${resized.toString('base64')}`;
+        } catch (e) {
+            console.error('Failed to resize log image:', e);
+        }
+    }
+
+    const log: LogItem = { timestamp, message, type, image };
+
     activityLogs.unshift(log);
     if (activityLogs.length > MAX_LOGS) {
         activityLogs.pop();
     }
-    console.log(log);
+    console.log(`[${timestamp}] ${message}`);
 }
 
 // ------ API Routes ------
@@ -255,8 +281,8 @@ if (gmailUser && gmailPassword) {
             const cameraName = extractCameraNameFromSubject(emailData.subject) || 'Gmail Camera';
 
             console.log(`\n[Gmail] 📸 Processing snapshot from email`);
-            addLog(`📧 Email from ${emailData.from}`);
-            addLog(`📸 Processing: ${cameraName}`);
+            addLog(`📧 Email from ${emailData.from}`, 'info');
+            addLog(`📸 Processing: ${cameraName}`, 'processing', emailData.imageBuffer);
 
             try {
                 // Get Smart Rules
@@ -276,7 +302,7 @@ if (gmailUser && gmailPassword) {
                     // Use email text/subject as description
                     const directDesc = emailData.text || emailData.subject || "Motion Detected (Direct Mode)";
 
-                    addLog(`📱 Alert sent (Direct)`);
+                    addLog(`📱 Alert sent (Direct)`, 'success', emailData.imageBuffer);
                     await telegramService.sendAlert(cameraName, directDesc, emailData.imageBuffer);
                     return;
                 }
@@ -291,7 +317,7 @@ if (gmailUser && gmailPassword) {
                 );
 
                 if (!result) {
-                    addLog(`⚠️ AI analysis failed`);
+                    addLog(`⚠️ AI analysis failed`, 'error');
                     return;
                 }
 
@@ -300,21 +326,21 @@ if (gmailUser && gmailPassword) {
 
                     if (isLowConfidence(result.confidence)) {
                         console.log(`[Gmail] 🚫 Blocked: Low confidence (${result.confidence}%)`);
-                        addLog(`🚫 Low Conf (${result.confidence}%): ${result.description}`);
+                        addLog(`🚫 Low Conf (${result.confidence}%): ${result.description}`, 'info', emailData.imageBuffer);
                     } else {
-                        addLog(`🚨 ALERT: ${cameraName} - ${result.description}`);
+                        addLog(`🚨 ALERT: ${cameraName} - ${result.description}`, 'alert', emailData.imageBuffer);
                         // Use Telegram Service
                         await telegramService.sendAlert(cameraName, result.description, emailData.imageBuffer);
-                        addLog(`📱 Alert sent`);
+                        addLog(`📱 Alert sent`, 'success');
                     }
                 } else {
                     console.log(`[Gmail] ✅ Normal: ${result.description}`);
-                    addLog(`✅ Normal (${result.confidence}%): ${result.description}`);
+                    addLog(`✅ Normal (${result.confidence}%): ${result.description}`, 'success', emailData.imageBuffer);
                 }
 
             } catch (error: any) {
                 console.error(`[Gmail] Processing error:`, error);
-                addLog(`❌ Error: ${error.message}`);
+                addLog(`❌ Error: ${error.message}`, 'error');
             }
         });
     }

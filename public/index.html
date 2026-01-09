@@ -158,6 +158,39 @@
         [x-cloak] {
             display: none !important;
         }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(5px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes scaleIn {
+            from {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .animate-fadeIn {
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .animate-scaleIn {
+            animation: scaleIn 0.2s ease-out;
+        }
     </style>
 </head>
 
@@ -219,11 +252,40 @@
                 <!-- Log Container -->
                 <div class="flex-1 overflow-y-auto p-4 space-y-2 font-mono text-sm" id="logs-container">
                     <template x-for="(log, index) in logs" :key="index">
-                        <div class="border-l-2 pl-3 py-1 animate-fadeIn"
-                            :class="log.includes('ALERT') ? 'border-red-500 bg-red-900/10' : (log.includes('Normal') ? 'border-green-500' : 'border-blue-500')">
-                            <span x-text="log" class="text-gray-300 break-words"></span>
+                        <div class="border-l-2 pl-3 py-2 animate-fadeIn group" :class="{
+                                'border-red-500 bg-red-900/10': log.type === 'alert',
+                                'border-green-500': log.type === 'success',
+                                'border-blue-500': log.type === 'info' || log.type === 'processing',
+                                'border-orange-500': log.type === 'error'
+                            }">
+                            <div class="flex items-start gap-2">
+                                <span class="text-xs text-gray-500 font-mono whitespace-nowrap pt-0.5"
+                                    x-text="'['+log.timestamp+']'"></span>
+                                <div class="flex-1">
+                                    <div x-text="log.message" class="text-gray-300 break-words"
+                                        :class="{'font-bold text-red-400': log.type==='alert', 'text-green-400': log.type==='success'}">
+                                    </div>
+
+                                    <!-- Log Image -->
+                                    <template x-if="log.image">
+                                        <div class="mt-2">
+                                            <img :src="log.image"
+                                                class="h-32 rounded border border-gray-700 cursor-zoom-in hover:brightness-110 transition object-cover"
+                                                @click="$dispatch('open-image', log.image)" title="View snapshot">
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
                         </div>
                     </template>
+
+                    <!-- Image Modal -->
+                    <div x-data="{ open: false, src: '' }" @open-image.window="open = true; src = $event.detail"
+                        x-show="open" x-transition.opacity
+                        class="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 cursor-zoom-out"
+                        @click="open = false" x-cloak>
+                        <img :src="src" class="max-w-[95%] max-h-[95%] rounded shadow-2xl animate-scaleIn">
+                    </div>
                     <div x-show="logs.length === 0"
                         class="absolute inset-0 flex items-center justify-center text-gray-600 italic">
                         No activity yet. Monitoring...
