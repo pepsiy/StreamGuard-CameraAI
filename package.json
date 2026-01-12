@@ -1,0 +1,27 @@
+{
+    "name": "streamguard-netlify",
+    "version": "1.0.0",
+    "scripts": {
+        "start": "npx tsx server.ts",
+        "build": "echo 'No build needed'"
+    },
+    "dependencies": {
+        "@netlify/functions": "^2.4.0",
+        "@types/busboy": "^1.5.4",
+        "@types/cors": "^2.8.19",
+        "@types/express": "^5.0.6",
+        "@types/imap": "^0.8.43",
+        "@types/mailparser": "^3.4.6",
+        "@types/node": "^20.19.27",
+        "busboy": "^1.6.0",
+        "cors": "^2.8.5",
+        "dotenv": "^17.2.3",
+        "express": "^5.2.1",
+        "imap": "^0.8.19",
+        "mailparser": "^3.9.1",
+        "sharp": "^0.34.5",
+        "ts-node": "^10.9.2",
+        "tsx": "^4.21.0",
+        "typescript": "^5.9.3"
+    }
+}
