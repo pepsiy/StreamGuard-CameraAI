@@ -1,8 +1,0 @@
-{
-  "enabled": true,
-  "securityRules": "Phát hiện người lạ, hành vi khả nghi, trộm cắp, hoặc phương tiện không xác định dừng đỗ lâu. Bỏ qua động vật nhỏ (chó, mèo), chim, người đi bộ lướt qua nhanh.",
-  "minConfidence": "51",
-  "personIouThreshold": 0.35,
-  "vehicleIouThreshold": 0.95,
-  "ignoreMovingPersons": true
-}
